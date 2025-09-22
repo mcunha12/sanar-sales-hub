@@ -1,22 +1,20 @@
-[project]
+[tool.poetry]
 name = "poc-pirata"
 version = "0.1.0"
 description = ""
-authors = [
-    {name = "Your Name",email = "you@example.com"}
-]
+authors = ["Your Name <you@example.com>"]
 readme = "README.md"
-requires-python = ">=3.13, <4.0"
-dependencies = [
-    "streamlit (>=1.49.1,<2.0.0)",
-    "pandas (>=2.3.2,<3.0.0)",
-    "openai (>=1.108.1,<2.0.0)",
-    "python-dotenv (>=1.1.1,<2.0.0)",
-    "pinecone (>=7.3.0,<8.0.0)",
-    "supabase (>=2.20.0,<3.0.0)",
-]
+package-mode = false  # Linha CRÍTICA para o deploy no Streamlit Cloud
 
+[tool.poetry.dependencies]
+python = ">=3.13, <4.0"
+streamlit = ">=1.49.1,<2.0.0"
+pandas = ">=2.3.2,<3.0.0"
+openai = ">=1.108.1,<2.0.0"
+python-dotenv = ">=1.1.1,<2.0.0"
+pinecone = ">=7.3.0,<8.0.0"
+supabase = ">=2.20.0,<3.0.0"
 
 [build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
+requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
