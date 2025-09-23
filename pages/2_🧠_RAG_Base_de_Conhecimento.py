@@ -1,16 +1,12 @@
 import streamlit as st
 import services
 import config
-from styles import load_css, render_header, icon_rag # Importa as novas funções
 
 st.set_page_config(page_title="Busca RAG", layout="wide")
-load_css() # Aplica o CSS
 
-render_header(
-    title="Assistente de Vendas com RAG",
-    subtitle="Faça perguntas sobre nossos cursos e a IA irá buscar a informação em nossa base.",
-    icon_svg=icon_rag
-)
+# --- Cabeçalho Padrão Streamlit ---
+st.title("🤖 Assistente de Vendas com RAG")
+st.write("Faça uma pergunta sobre nossos cursos e a IA irá buscar a informação em nossa base.")
 
 if "rag_messages" not in st.session_state:
     st.session_state.rag_messages = []
@@ -26,6 +22,7 @@ if prompt := st.chat_input("Qual a sua dúvida?"):
 
     with st.chat_message("assistant"):
         with st.spinner("Analisando e buscando informações..."):
+            # ... (o resto do código permanece o mesmo)
             st.write("1️⃣ **Classificando a intenção...**")
             specialties = services.classify_query(prompt, config.CLASSIFIER_SYSTEM_PROMPT)
             

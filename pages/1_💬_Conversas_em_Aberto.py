@@ -3,15 +3,12 @@ import pandas as pd
 import json
 from collections import defaultdict
 import services
-from styles import load_css, render_header, icon_dashboard
 from datetime import datetime
 
-st.set_page_config(page_title="Dashboard de Vendas", layout="wide")
-load_css()
+st.set_page_config(page_title="Conversas", layout="wide")
 
-# Garante que a conexão com o Supabase existe
 if 'conn' not in st.session_state:
-    st.error("Conexão com o Supabase não encontrada. Por favor, vá para a página principal primeiro.")
+    st.error("Conexão com o Supabase não encontrada. Por favor, recarregue a página principal primeiro.")
     st.stop()
 conn = st.session_state.conn
 
@@ -76,18 +73,14 @@ def format_timestamp(ts_str):
     if not ts_str or not isinstance(ts_str, str):
         return "--"
     try:
-        # Tenta converter de um formato ISO com 'Z' ou timezone
         dt = datetime.fromisoformat(ts_str.replace('Z', '+00:00'))
         return dt.strftime('%d/%m %H:%M')
     except ValueError:
         return "--"
 
 # --- RENDERIZAÇÃO DA PÁGINA ---
-render_header(
-    title="Dashboard de Vendas IA",
-    subtitle="Insights acionáveis e métricas de conversão em tempo real",
-    icon_svg=icon_dashboard
-)
+st.title("📬 Dashboard de Vendas IA")
+st.caption("Insights acionáveis e métricas de conversão em tempo real")
 
 all_messages_df = get_conversations(conn)
 
@@ -102,15 +95,15 @@ conversas_em_negociacao = sum(1 for _, group in conversations if group['em_negoc
 taxa_conversao = (conversas_em_negociacao / total_conversas * 100) if total_conversas > 0 else 0
 
 kpi1, kpi2, kpi3 = st.columns(3)
-kpi1.metric(label="Conversas Totais 👥", value=total_conversas)
-kpi2.metric(label="Em Negociação ⚡️", value=conversas_em_negociacao)
-kpi3.metric(label="Taxa Conversão 🎯", value=f"{taxa_conversao:.0f}%")
+kpi1.metric(label="Conversas Totais", value=total_conversas)
+kpi2.metric(label="Em Negociação", value=conversas_em_negociacao)
+kpi3.metric(label="Taxa Conversão", value=f"{taxa_conversao:.0f}%")
 
 st.divider()
 
 # --- BARRA DE FERRAMENTAS ---
-search_col, filter_col = st.columns([4, 1])
-search_term = search_col.text_input("Buscar...", placeholder="🔍 Buscar por cliente ou conteúdo...", label_visibility="collapsed")
+search_col, filter_col, _ = st.columns([3, 1, 1]) # Adiciona coluna extra para espaçamento
+search_term = search_col.text_input("Buscar...", placeholder="Buscar por cliente ou conteúdo...", label_visibility="collapsed")
 negociacao_status = filter_col.toggle("Apenas em Negociação", value=True)
 
 # --- LÓGICA DE FILTRAGEM ---
@@ -129,6 +122,7 @@ if 'selected_ticket_id' not in st.session_state:
 # --- RENDERIZAÇÃO CONDICIONAL: LISTA OU DETALHES ---
 if st.session_state.selected_ticket_id:
     # --- VISTA DE DETALHES DA CONVERSA ---
+    # (Esta parte já usa componentes padrão do Streamlit e não precisa de grandes mudanças)
     ticket_id = st.session_state.selected_ticket_id
     messages_df = conversations.get_group(ticket_id)
     first_row = messages_df.iloc[0]
@@ -147,16 +141,17 @@ if st.session_state.selected_ticket_id:
 
     if 'insights' in st.session_state and st.session_state.insights:
         insights = st.session_state.insights
-        st.subheader("🧠 Insights Gerados pela IA")
-        st.markdown(f"**Resumo:** {insights.get('resumo', 'N/A')}")
-        st.markdown(f"**Objeção Identificada:** {insights.get('objecao', 'N/A')}")
-        st.markdown(f"**Ponto a Explorar:** {insights.get('ponto_fraco', 'N/A')}")
-        
-        follow_up = insights.get('follow_up', {})
         with st.container(border=True):
-            st.markdown(f"**Estratégia de Follow-up:** {follow_up.get('estrategia', 'N/A')}")
-            st.markdown("**Próxima Mensagem (Copy):**")
-            st.code(follow_up.get('copy', 'N/A'), language=None)
+            st.subheader("🧠 Insights Gerados pela IA")
+            st.markdown(f"**Resumo:** {insights.get('resumo', 'N/A')}")
+            st.markdown(f"**Objeção Identificada:** {insights.get('objecao', 'N/A')}")
+            st.markdown(f"**Ponto a Explorar:** {insights.get('ponto_fraco', 'N/A')}")
+            
+            follow_up = insights.get('follow_up', {})
+            with st.expander("**Estratégia e Copy de Follow-up**"):
+                st.markdown(f"**Estratégia:** {follow_up.get('estrategia', 'N/A')}")
+                st.markdown("**Próxima Mensagem (Copy):**")
+                st.code(follow_up.get('copy', 'N/A'), language=None)
 
     st.divider()
     
@@ -171,28 +166,22 @@ if st.session_state.selected_ticket_id:
 else:
     # --- VISTA DE LISTA DE CONVERSAS ---
     st.write(f"{len(filtered_conversations)} de {total_conversas} conversas")
-    st.write("") 
 
     for ticket_id, group in filtered_conversations:
         group = group.sort_values('ordemmensagens', ascending=False)
         last_msg = group.iloc[0]
         
-        card_html = f"""
-            <div class="custom-card">
-                <div>
-                    <span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0072C6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 8px;"><path d="M17 18a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2"/><rect width="18" height="18" x="3" y="4" rx="2"/><circle cx="12" cy="10" r="2"/><line x1="8" x2="8" y1="2" y2="4"/><line x1="16" x2="16" y1="2" y2="4"/></svg>{last_msg['user_identity']}</span>
-                    {'<span class="badge-negociando">✨ Negociando</span>' if last_msg['em_negociacao'] else ''}
-                </div>
-                <p style="color: #4A4A4A; margin-top: 0.5rem; margin-bottom: 0;">{last_msg['mensagem']}</p>
-                <div class="card-footer">
-                    <span>💬 {len(group)} msgs</span>
-                    <span>🕒 {format_timestamp(last_msg['data_hora'])}</span>
-                </div>
-            </div>
-        """
-        # CORREÇÃO: Adicionando unsafe_allow_html=True para renderizar o HTML
-        st.markdown(card_html, unsafe_allow_html=True)
-        
-        if st.button("Ver Conversa Completa", key=ticket_id, use_container_width=True):
-            st.session_state.selected_ticket_id = ticket_id
-            st.rerun()
+        with st.container(border=True):
+            col1, col2, col3 = st.columns([4, 1, 1])
+            with col1:
+                st.subheader(f"{last_msg['user_identity']}")
+                st.caption(f"Ticket: {ticket_id} | Curso: {last_msg['curso']}")
+                st.text(f"{last_msg['mensagem']}")
+            with col2:
+                st.metric("Mensagens", len(group))
+                if last_msg['em_negociacao']:
+                    st.success("Negociando")
+            with col3:
+                if st.button("Analisar", key=ticket_id, use_container_width=True):
+                    st.session_state.selected_ticket_id = ticket_id
+                    st.rerun()
