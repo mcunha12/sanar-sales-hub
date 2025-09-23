@@ -1,11 +1,16 @@
 import streamlit as st
 import services
 import config
+from styles import load_css, render_header, icon_rag # Importa as novas funções
 
 st.set_page_config(page_title="Busca RAG", layout="wide")
+load_css() # Aplica o CSS
 
-st.title("🤖 Assistente de Vendas com RAG")
-st.write("Faça uma pergunta sobre nossos cursos e a IA irá buscar a informação em nossa base e fornecer insights para sua venda.")
+render_header(
+    title="Assistente de Vendas com RAG",
+    subtitle="Faça perguntas sobre nossos cursos e a IA irá buscar a informação em nossa base.",
+    icon_svg=icon_rag
+)
 
 if "rag_messages" not in st.session_state:
     st.session_state.rag_messages = []
@@ -21,7 +26,6 @@ if prompt := st.chat_input("Qual a sua dúvida?"):
 
     with st.chat_message("assistant"):
         with st.spinner("Analisando e buscando informações..."):
-            # Etapa 1: Classificar a intenção
             st.write("1️⃣ **Classificando a intenção...**")
             specialties = services.classify_query(prompt, config.CLASSIFIER_SYSTEM_PROMPT)
             
@@ -30,9 +34,7 @@ if prompt := st.chat_input("Qual a sua dúvida?"):
             else:
                 st.write(f"✅ **Especialidades identificadas:** `{'`, `'.join(specialties)}`")
             
-            # Etapa 2: Buscar na base de conhecimento via API do Assistente Pinecone
             st.write("2️⃣ **Buscando na base de conhecimento...**")
-            # MUDANÇA: Chamando a nova função que faz o POST request
             rag_content, citations = services.query_pinecone_assistant(prompt)
             
             if "Erro" in rag_content or "Não foi possível" in rag_content:
@@ -40,7 +42,6 @@ if prompt := st.chat_input("Qual a sua dúvida?"):
             else:
                 st.write("✅ **Informações relevantes encontradas!**")
                 
-                # Etapa 3: Gerar o insight final com o Estrategista de Vendas AI
                 st.write("3️⃣ **Gerando insight com o Estrategista de Vendas AI...**")
                 final_response = services.get_sales_insight(
                     user_query=prompt,
